@@ -1,19 +1,21 @@
+REBAR=`which rebar`
+
 all:
-	./rebar compile skip_deps=true
+	@$(REBAR) compile skip_deps=true
 
 clean:
-	./rebar clean
+	@$(REBAR) clean
 
 .PHONY: test
 
 test:
-	./rebar eunit skip_deps=true
+	@$(REBAR) eunit skip_deps=true
 
 bench:
-	./rebar compile skip_deps=true
-	erl -pa ebin -s parsexml bench
+	@$(REBAR) compile skip_deps=true
+	erl -pa ebin -s exomler bench
 
-PLT_NAME=.parsexml.plt
+PLT_NAME=.exomler.plt
 
 $(PLT_NAME):
 	@ERL_LIBS=deps dialyzer --build_plt --output_plt $@ \
@@ -22,4 +24,3 @@ $(PLT_NAME):
 dialyze: $(PLT_NAME)
 	@dialyzer ebin --plt $(PLT_NAME) --no_native \
 		-Werror_handling -Wunderspecs
-
