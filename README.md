@@ -13,12 +13,18 @@ Usage:
 
 
 ```
-{Tag, Attrs, Content} = exomler:parse(Bin). 
+{Tag, Attrs, Content} = exomler:decode(XML). 
 ```
 
 Where Tag is binary name of root tag, Attrs is a {Key,Value} list of attrs and Content is
 list of inner tags or Text which is binary.
 
+```
+XML = <<"<html key=\"value\">Body</html>">>.
+{<<"html">>, [{<<"key">>, <<"value">>}], [<<Body>>]} = exomler:decode(XML).
+XML = exomler:encode({<<"html">>, [{<<"key">>, <<"value">>}], [<<Body>>]}).
+
+```
 
 
 Benchmarking

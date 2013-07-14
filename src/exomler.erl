@@ -1,7 +1,8 @@
 -module(exomler).
 
 %% API
--export([parse/1]).
+-export([encode/1]).
+-export([decode/1]).
 
 -define(IS_BLANK(Blank), Blank == $\s 
     orelse Blank == $\n
@@ -12,91 +13,118 @@
 
 
 %% API
-parse(Bin) when is_binary(Bin) ->
+encode({Tag, Attrs, Content}) ->
+    encode_tag({Tag, Attrs, Content}).
+
+decode(Bin) when is_binary(Bin) ->
     Bin1 = skip_declaration(Bin), 
-    {Tag, Rest} = tag(Bin1),
-    <<>> = trim_head(Rest), 
+    {Tag, Rest} = decode_tag(Bin1),
+    <<>> = trim_left(Rest), 
     Tag.
 
+
 %% internal
+encode_tag({Tag, Attrs, Content}) ->
+    BinAttrs = encode_tag_attrs(Attrs),
+    BinContent = << <<(encode_content(SubTag))/binary>> || SubTag <- Content>>,
+    Tag1 = trim_left(Tag),
+    <<"<", Tag1/binary, BinAttrs/binary, ">", BinContent/binary, 
+        "</", Tag1/binary, ">">>.
+
+encode_tag_attrs(Attrs) ->
+    encode_tag_attrs(Attrs, <<>>).
+
+encode_tag_attrs([{Key, Value}|Tail], EncodedAttrs) ->
+    EncodedAttr = <<" ", Key/binary, "=\"",Value/binary, "\"">>, 
+    encode_tag_attrs(Tail, <<EncodedAttrs/binary, EncodedAttr/binary>>);
+encode_tag_attrs([], EncodedAttrs) ->
+    EncodedAttrs.
+
+encode_content(Tuple) when is_tuple(Tuple) ->
+    encode_tag(Tuple);
+encode_content(Binary) when is_binary(Binary) ->
+    Binary.
+
 skip_declaration(<<"<?xml", Bin/binary>>) ->
     [_, Rest] = binary:split(Bin, <<"?>">>),
-    trim_head(Rest), 
+    trim_left(Rest), 
     skip_declaration(Rest);
 skip_declaration(<<"<!", Bin/binary>>) ->
     [_, Rest] = binary:split(Bin, <<">">>),
-    trim_head(Rest);
+    trim_left(Rest);
 skip_declaration(<<"<", _/binary>> = Bin) ->
     Bin;
 skip_declaration(<<_, Bin/binary>>) ->
     skip_declaration(Bin).
 
-trim_head(<<" ", Bin/binary>>) -> trim_head(Bin);
-trim_head(<<"\n", Bin/binary>>) -> trim_head(Bin);
-trim_head(<<"\t", Bin/binary>>) -> trim_head(Bin);
-trim_head(<<"\r", Bin/binary>>) -> trim_head(Bin);
-trim_head(Bin) -> Bin.
-
-trim_tail(<<>>) -> <<>>;
-trim_tail(Bin) -> trim_tail(Bin, binary_part(Bin,{0, byte_size(Bin)-1})).
-
-trim_tail(Bin, Rest) when Bin =:= <<Rest/binary, " ">> -> trim_tail(Rest);
-trim_tail(Bin, Rest) when Bin =:= <<Rest/binary, "\n">> -> trim_tail(Rest);
-trim_tail(Bin, Rest) when Bin =:= <<Rest/binary, "\t">> -> trim_tail(Rest);
-trim_tail(Bin, Rest) when Bin =:= <<Rest/binary, "\r">> -> trim_tail(Rest);
-trim_tail(Bin, _) -> Bin.
-
-tag(<<"<", Bin/binary>>) ->
+decode_tag(<<"<", Bin/binary>>) ->
     [TagHeader1, Rest1] = binary:split(Bin, <<">">>),
     Len = size(TagHeader1)-1, 
     case TagHeader1 of
         <<TagHeader:Len/binary, "/">> ->
-            {Tag, Attrs} = tag_header(TagHeader),
+            {Tag, Attrs} = decode_tag_header(TagHeader),
             {{Tag, Attrs,[]}, Rest1};
         TagHeader ->
-            {Tag, Attrs} = tag_header(TagHeader),
-            {Content, Rest2} = tag_content(Rest1, Tag),
+            {Tag, Attrs} = decode_tag_header(TagHeader),
+            {Content, Rest2} = decode_tag_content(Rest1, Tag),
             {{Tag, Attrs, Content}, Rest2}
   end.
 
-tag_header(TagHeader) ->
+decode_tag_header(TagHeader) ->
     case binary:split(TagHeader, [<<" ">>]) of
         [Tag] -> {Tag, []};
-        [Tag, Attrs] -> {Tag, tag_attrs(Attrs)}
+        [Tag, Attrs] -> {Tag, decode_tag_attrs(Attrs)}
     end.
 
-tag_attrs(<<Blank, Attrs/binary>>) when ?IS_BLANK(Blank) -> 
-    tag_attrs(Attrs);
-tag_attrs(<<>>) ->
+decode_tag_attrs(<<Blank, Attrs/binary>>) when ?IS_BLANK(Blank) -> 
+    decode_tag_attrs(Attrs);
+decode_tag_attrs(<<>>) ->
     [];
-tag_attrs(Attrs) ->
+decode_tag_attrs(Attrs) ->
     case binary:split(Attrs, <<"=">>) of
         [Key, Value1] ->
-            [Value2, Rest] = attr_value(Value1),
-            [{trim_tail(Key), Value2}|tag_attrs(Rest)]
+            [Value2, Rest] = decode_attr_value(Value1),
+            [{trim_right(Key), Value2}|decode_tag_attrs(Rest)]
     end.
 
-attr_value(<<Blank, Value/binary>>) when ?IS_BLANK(Blank) ->
-    attr_value(Value);
-attr_value(<<Quote, Value/binary>>) when ?IS_QUOTE(Quote) ->
+decode_attr_value(<<Blank, Value/binary>>) when ?IS_BLANK(Blank) ->
+    decode_attr_value(Value);
+decode_attr_value(<<Quote, Value/binary>>) when ?IS_QUOTE(Quote) ->
     binary:split(Value, <<Quote>>);
-attr_value(<<>>) ->
+decode_attr_value(<<>>) ->
     <<>>.
 
-tag_content(<<Blank, Bin/binary>>, Parent) when ?IS_BLANK(Blank) ->
-    tag_content(Bin, Parent);
-tag_content(<<"</", Bin1/binary>>, Parent) ->
+decode_tag_content(<<Blank, Bin/binary>>, Parent) when ?IS_BLANK(Blank) ->
+    decode_tag_content(Bin, Parent);
+decode_tag_content(<<"</", Bin1/binary>>, Parent) ->
     Len = size(Parent), 
-    <<Parent:Len/binary, ">", Bin/binary>> = Bin1,
-    {[], Bin};
-tag_content(<<"<", _/binary>> = Bin, Parent) ->
-    {Tag, Rest1} = tag(Bin),
-    {Content, Rest2} = tag_content(Rest1, Parent),
+    case binary:split(Bin1, <<">">>) of
+        [<<Parent:Len/binary, Blank/binary>>, Bin] ->
+            <<>> = trim_left(Blank),
+            {[], Bin}
+    end;
+decode_tag_content(<<"<", _/binary>> = Bin, Parent) ->
+    {Tag, Rest1} = decode_tag(Bin),
+    {Content, Rest2} = decode_tag_content(Rest1, Parent),
     {[Tag|Content], Rest2};
-tag_content(Bin, Parent) ->
+decode_tag_content(Bin, Parent) ->
     [Text, Rest] = binary:split(Bin, <<"</", Parent/binary, ">">>),
     {[Text], Rest}.
 
+trim_left(<<" ", Bin/binary>>) -> trim_left(Bin);
+trim_left(<<"\n", Bin/binary>>) -> trim_left(Bin);
+trim_left(<<"\t", Bin/binary>>) -> trim_left(Bin);
+trim_left(<<"\r", Bin/binary>>) -> trim_left(Bin);
+trim_left(Bin) -> Bin.
+
+trim_right(<<>>) -> <<>>;
+trim_right(Bin) -> trim_right(Bin, binary_part(Bin,{0, byte_size(Bin)-1})).
+
+trim_right(Bin, Rest) when Bin =:= <<Rest/binary, " ">> -> trim_right(Rest);
+trim_right(Bin, Rest) when Bin =:= <<Rest/binary, "\n">> -> trim_right(Rest);
+trim_right(Bin, Rest) when Bin =:= <<Rest/binary, "\t">> -> trim_right(Rest);
+trim_right(Bin, Rest) when Bin =:= <<Rest/binary, "\r">> -> trim_right(Rest);
+trim_right(Bin, _) -> Bin.
 
 
 %% Tests
@@ -104,34 +132,74 @@ tag_content(Bin, Parent) ->
 
 -include_lib("eunit/include/eunit.hrl").
 
-parse_test_() -> 
+decode_tag_test_() ->
     [
     ?_assertEqual({<<"html">>, [], []},
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html></html>\n">>)),
     ?_assertEqual({<<"html">>, [], []},
-        parse(<<"\n\n\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html ></html>\n">>)),
     ?_assertEqual({<<"html">>, [], []},
-        parse(<<"\n<html></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html ></html >\n">>)),
+    ?_assertEqual({<<"html">>, [], []}, 
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html/>\n">>)),
+    ?_assertEqual({<<"html">>, [], []}, 
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html />\n">>)),
     ?_assertEqual({<<"html">>, [], []},
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html ></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE some_dtd SYSTEM \"example.dtd\">\n<html/>\n">>)),
+    ?_assertEqual({<<"html">>, [], []},
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE some_dtd SYSTEM \"example.dtd\">\n<html />\n">>)),
+    ?_assertEqual({<<"html">>, [], []},
+        decode(<<"\n\n\n<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html></html>\n">>)),
+    ?_assertEqual({<<"html">>, [], []},
+        decode(<<"\n<html></html>\n">>))
+    ].
+
+decode_content_test_() ->
+    [
+    ?_assertEqual({<<"html">>, [], [<<"Body">>]},
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html >Body</html>\n">>)),
+    ?_assertEqual({<<"html">>, [], [{<<"head">>, [], []}]},
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html><head></head></html>\n">>))%,
+%    ?_assertEqual({<<"html">>, [], [<<"TextBefore">>, {<<"head">>, [], []}, <<"TextAfter">>]},
+%        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html >TextBefore<head></head>TextAfter</html>\n">>))
+    ].
+
+decode_attributes_test_() -> 
+    [
     ?_assertEqual({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html xmlns=\"w3c\"></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html xmlns=\"w3c\"></html>\n">>)),
     ?_assertEqual({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html xmlns=\"w3c\" ></html>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html xmlns=\"w3c\" ></html>\n">>)),
     ?_assertEqual({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []},
-        parse(<<"<html xmlns='w3c' />\n">>)),
-    ?_assertEqual({<<"html">>, [], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html/>\n">>)),
-    ?_assertEqual({<<"html">>, [], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html />\n">>)),
+        decode(<<"<html xmlns='w3c' />\n">>)),
     ?_assertEqual({<<"html">>, [{<<"k">>,<<"v">>}], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k=\"v\"/>\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k=\"v\"/>\n">>)),
     ?_assertEqual({<<"html">>, [{<<"k">>,<<"v">>}], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k=\"v\" />\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k=\"v\" />\n">>)),
     ?_assertEqual({<<"html">>, [{<<"k">>,<<"v">>}], []}, 
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k  =  \"v\" />\n">>)),
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html k  =  \"v\" />\n">>)),
     ?_assertEqual({<<"html">>, [{<<"k">>,<<"v">>}], []},
-        parse(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE some_dtd SYSTEM \"example.dtd\">\n<html k=\"v\" />\n">>))
+        decode(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE some_dtd SYSTEM \"example.dtd\">\n<html k=\"v\" />\n">>))
+  ].
+
+encode_tag_test_() ->
+    [
+    ?_assertEqual(<<"<html></html>">>, 
+        encode({<<"html">>, [], []}))
+    ].
+
+encode_content_test_() ->
+    [
+    ?_assertEqual(<<"<html>Body</html>">>, 
+        encode({<<"html">>, [], [<<"Body">>]})),
+    ?_assertEqual(<<"<html>TextBefore<head>Body</head>TextAfter</html>">>, 
+        encode({<<"html">>, [], [<<"TextBefore">>, {<<"head">>, [], [<<"Body">>]}, <<"TextAfter">>]}))
+    ].
+
+encode_attributes_test_() -> 
+    [
+    ?_assertEqual(<<"<html xmlns=\"w3c\"></html>">>, 
+        encode({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []}))
   ].
 
 -endif.
