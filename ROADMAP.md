@@ -1,5 +1,7 @@
 ROADMAP
 =======
 
- * Add XML content escaping
+ * Add XML SAX parser
+
+ * Add not strict parsing as option
 
