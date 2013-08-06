@@ -7,19 +7,23 @@
 
 %% API
 start(Bin) when is_binary(Bin) ->
-    Bin1 = skip(Bin), 
-    {Tag, Rest} = tag(ltrim(Bin1)),
+    Bin1 = prolog(Bin),
+    Bin2 = doctype(ltrim(Bin1)),
+    {Tag, Rest} = tag(ltrim(Bin2)),
     <<>> = ltrim(Rest), 
     Tag.
 
 %% internal
-skip(<<"<?xml", Bin/binary>>) ->
+prolog(<<"<?xml", Bin/binary>>) ->
     [_, Rest] = binary:split(Bin, <<"?>">>),
-    skip(ltrim(Rest));
-skip(<<"<!", Bin/binary>>) ->
+    Rest;
+prolog(Bin) ->
+    Bin.
+
+doctype(<<"<!", Bin/binary>>) ->
     [_, Rest] = binary:split(Bin, <<">">>),
-    ltrim(Rest);
-skip(Bin) ->
+    Rest;
+doctype(Bin) ->
     Bin.
 
 tag(<<"<", Bin/binary>>) ->
@@ -58,6 +62,10 @@ tag_content(<<"</", Bin/binary>>, Tag) ->
     <<Tag:Len/binary, Rest1/binary>> = Bin,
     <<">", Rest2/binary>> = ltrim(Rest1),
     {[], Rest2};
+tag_content(<<"<![CDATA[", Bin/binary>>, Tag) ->
+    [Text, Rest1] = binary:split(Bin, <<"]]>">>),
+    {Content, Rest2} = tag_content(Rest1, Tag),
+    {[Text|Content], Rest2};
 tag_content(<<"<", _/binary>> = Bin, Tag) ->
   {TagData, Rest1} = tag(Bin),
   {Content, Rest2} = tag_content(Rest1, Tag),
@@ -97,8 +105,8 @@ unescape(Bin) ->
                 <<"quot;", Rest2/binary>> -> {$", Rest2};
                 <<"apos;", Rest2/binary>> -> {$', Rest2};
                 <<"lt;", Rest2/binary>> -> {$<, Rest2};
-                <<"&gt;", Rest2/binary>> -> {$>, Rest2};
-                <<"&amp;", Rest2/binary>> -> {$&, Rest2}
+                <<"gt;", Rest2/binary>> -> {$>, Rest2};
+                <<"amp;", Rest2/binary>> -> {$&, Rest2}
             end,
             <<Unescaped/binary, Char, (unescape(Rest3))/binary>>
     end.
@@ -136,8 +144,10 @@ decode_content_test_() ->
         start(<<"<html >TextBefore<head></head>TextAfter</html>\n">>)),
     ?_assertEqual({<<"html">>, [], [<<"TextBefore">>, {<<"head">>, [], []}, <<"TextAfter">>]},
         start(<<"<html > \nTextBefore<head></head>TextAfter</html>\n">>)),
-        ?_assertEqual({<<"html">>, [], [{<<"p">>, [], [<<"0 < 1">>]}]},
-        start(<<"<html><p> 0 &lt; 1 </p></html>\n">>))
+    ?_assertEqual({<<"html">>, [], [{<<"p">>, [], [<<"0 < 5 > 3 & \"5\"='5'">>]}]},
+        start(<<"<html><p> 0 &lt; 5 &gt; 3 &amp; &quot;5&quot;=&apos;5&apos; </p></html>\n">>)),
+    ?_assertEqual({<<"html">>, [], [{<<"p">>, [], [<<" 0 < 5 > 3 & \"5\"='5'  ">>]}]},
+        start(<<"<html><p><![CDATA[ 0 < 5 > 3 & \"5\"='5'  ]]></p></html>\n">>))
     ].
 
 decode_attributes_test_() -> 
