@@ -30,60 +30,47 @@ XML = exomler:encode({<<"html">>, [{<<"key">>, <<"value">>}], [<<Body>>]}).
 Benchmarking
 ------------
 
-Download some XML and run bench:
-
 ```
-$ ./bench.erl m.xml 500
-   xmerl:     8511ms     2845KB 1MB/s
- exomler:     1047ms       86KB 14MB/s
-  erlsom:     3428ms     1759KB 4MB/s
-$ wc -l m.xml 
-      82 m.xml
-$ du -hs m.xml 
- 32K  m.xml
-```
-
-Here we can see that small 32K file is parsed 500 times on a high speed with low memory usage.
-Memory usage is collected via process_info(Pid,memory)
-
-Let's check on something bigger:
-
-```
-$ du -hs FIX50SP2.xml
-512K  FIX50SP2.xml
-$ wc -l FIX50SP2.xml
-10540 FIX50SP2.xml
-$ ./bench.erl FIX50SP2.xml 5
-   xmerl:     2179ms    46622KB 1MB/s
- exomler:      701ms     7449KB 3MB/s
-  erlsom:      854ms    18917KB 3MB/s
-```
-
-Here we can see, that erlsom runs on the same speed but with higher memory usage.
-
-Lets now parse this file 100 times:
-
-```
-$ ./bench.erl FIX50SP2.xml 100
-   xmerl:    46240ms    56653KB 1MB/s
- exomler:    15607ms     6501KB 3MB/s
-  erlsom:    17838ms    15630KB 2MB/s
-```
-
-exomler and erlsom take similar time, but erlsom is using more memory.
-
-Now lets start parsing with spawn_opt([{fullsweep_after,5}]):
-
-```
-$ ./bench.erl m.xml 500
-   xmerl:    13022ms     1535KB 1MB/s
- exomler:     1081ms      171KB 14MB/s
-  erlsom:     5045ms     1087KB 3MB/s
-$ ./bench.erl ../trader/apps/fix/spec/FIX50SP2.xml 100
-   xmerl:    76785ms    29696KB 0MB/s
- exomler:    19656ms     7449KB 2MB/s
-  erlsom:    23631ms    17165KB 2MB/s
+./exomler_bench test_01.xml 1000
+--------------------------------------------------------
+      parser    min time    all time    memory     speed
+--------------------------------------------------------
+       xmerl      165mcs      222mls      73KB     1MB/s
+      erlsom       34mcs       93mls      20KB     3MB/s
+     exomler       30mcs       94mls      13KB     3MB/s
+ libexpat.so       28mcs       69mls      28KB     4MB/s
+  libxml2.so       26mcs       76mls      20KB     3MB/s
+--------------------------------------------------------
+./exomler_bench test_02.xml 1000
+--------------------------------------------------------
+      parser    min time    all time    memory     speed
+--------------------------------------------------------
+       xmerl      402mcs      494mls     159KB     2MB/s
+      erlsom       98mcs      166mls     106KB     6MB/s
+     exomler       74mcs      121mls      20KB     9MB/s
+ libexpat.so       52mcs       87mls      53KB    12MB/s
+  libxml2.so       44mcs       98mls      33KB    11MB/s
+--------------------------------------------------------
+./exomler_bench test_03.xml 1000
+--------------------------------------------------------
+      parser    min time    all time    memory     speed
+--------------------------------------------------------
+       xmerl     1753mcs     1951mls     672KB     2MB/s
+      erlsom      624mcs      920mls     171KB     5MB/s
+     exomler      503mcs      812mls     139KB     5MB/s
+ libexpat.so      266mcs      347mls     310KB    13MB/s
+  libxml2.so      213mcs      294mls     224KB    15MB/s
+--------------------------------------------------------
+./exomler_bench test_04.xml 1000
+--------------------------------------------------------
+      parser    min time    all time    memory     speed
+--------------------------------------------------------
+       xmerl     3599mcs     4153mls    2845KB     5MB/s
+      erlsom     1681mcs     2064mls    1087KB    10MB/s
+     exomler      415mcs      703mls      86KB    30MB/s
+ libexpat.so      285mcs      467mls     310KB    45MB/s
+  libxml2.so      248mcs      316mls     191KB    67MB/s
+--------------------------------------------------------
 ```
 
-Time is lowered to to frequent garbage collection, but memory footprint is again better for exomler
-
+Here we can see, that exomler very memory-efficient, and shows good speed, even when compared with the C-libs
