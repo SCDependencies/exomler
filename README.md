@@ -73,4 +73,45 @@ Benchmarking
 --------------------------------------------------------
 ```
 
-Here we can see, that exomler very memory-efficient, and shows good speed, even when compared with the C-libs
+Here we can see, that exomler very memory-efficient, and shows good speed, even when compared with the C-libs.
+
+But like a NIFs, Erlang ports prevent Erlang VM from efficiently handling many processes, and if we run this test several times, we note that the results are varied.
+
+If we exclude parsers that use Erlang-ports, we note that the results of parsers written in the pure Erlang will be a little better, and if we run the test several times the results are not varied.
+
+```
+./exomler_bench test_01.xml 1000
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl      165mcs      196mls      73KB     1MB/s
+     erlsom       34mcs       70mls      20KB     4MB/s
+    exomler       29mcs       61mls      13KB     4MB/s
+-------------------------------------------------------
+./exomler_bench test_02.xml 1000
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl      400mcs      460mls     159KB     2MB/s
+     erlsom       98mcs      149mls     106KB     7MB/s
+    exomler       75mcs      115mls      20KB     9MB/s
+-------------------------------------------------------
+./exomler_bench test_03.xml 1000
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl     1746mcs     1880mls     672KB     2MB/s
+     erlsom      619mcs      717mls     171KB     6MB/s
+    exomler      505mcs      579mls     139KB     8MB/s
+-------------------------------------------------------
+./exomler_bench test_04.xml 1000
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl     3621mcs     3976mls    2845KB     5MB/s
+     erlsom     1691mcs     1925mls    1087KB    11MB/s
+    exomler      406mcs      478mls      86KB    44MB/s
+-------------------------------------------------------
+```
+
+
