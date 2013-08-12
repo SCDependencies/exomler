@@ -1,12 +1,12 @@
 -module(exomler_dom_encoder).
 
 %% API
--export([start/1]).
+-export([encode/1]).
 
 -include("exomler.hrl").
 
 %% API
-start({Tag, Attrs, Content}) ->
+encode({Tag, Attrs, Content}) ->
     tag({Tag, Attrs, Content}).
 
 %% internal
@@ -62,21 +62,21 @@ escape(<<>>, Escaped) ->
 encode_tag_test_() ->
     [
     ?_assertEqual(<<"<html></html>">>, 
-        start({<<"html">>, [], []}))
+        encode({<<"html">>, [], []}))
     ].
 
 encode_content_test_() ->
     [
     ?_assertEqual(<<"<html>Body</html>">>, 
-        start({<<"html">>, [], [<<"Body">>]})),
+        encode({<<"html">>, [], [<<"Body">>]})),
     ?_assertEqual(<<"<html>TextBefore<head>Body</head>TextAfter</html>">>, 
-        start({<<"html">>, [], [<<"TextBefore">>, {<<"head">>, [], [<<"Body">>]}, <<"TextAfter">>]}))
+        encode({<<"html">>, [], [<<"TextBefore">>, {<<"head">>, [], [<<"Body">>]}, <<"TextAfter">>]}))
     ].
 
 encode_attributes_test_() -> 
     [
     ?_assertEqual(<<"<html xmlns=\"w3c\"></html>">>, 
-        start({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []}))
+        encode({<<"html">>, [{<<"xmlns">>,<<"w3c">>}], []}))
   ].
 
 -endif.

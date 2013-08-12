@@ -1,7 +1,7 @@
 -define(IS_BLANK(Blank), 
     Blank == $\s;
-    Blank == $\n;
     Blank == $\t;
+    Blank == $\n;
     Blank == $\r
 ).
 

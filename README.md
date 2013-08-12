@@ -32,45 +32,45 @@ Benchmarking
 
 ```
 ./exomler_bench test_01.xml 1000
---------------------------------------------------------
-      parser    min time    all time    memory     speed
---------------------------------------------------------
-       xmerl      165mcs      222mls      73KB     1MB/s
-      erlsom       34mcs       93mls      20KB     3MB/s
-     exomler       30mcs       94mls      13KB     3MB/s
- libexpat.so       28mcs       69mls      28KB     4MB/s
-  libxml2.so       26mcs       76mls      20KB     3MB/s
---------------------------------------------------------
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl      167mcs      217mls      73KB     1MB/s
+     erlsom       34mcs       85mls      20KB     3MB/s
+    exomler       22mcs       62mls      16KB     4MB/s
+libexpat.so       29mcs       58mls      28KB     5MB/s
+ libxml2.so       26mcs       65mls      20KB     4MB/s
+-------------------------------------------------------
 ./exomler_bench test_02.xml 1000
---------------------------------------------------------
-      parser    min time    all time    memory     speed
---------------------------------------------------------
-       xmerl      402mcs      494mls     159KB     2MB/s
-      erlsom       98mcs      166mls     106KB     6MB/s
-     exomler       74mcs      121mls      20KB     9MB/s
- libexpat.so       52mcs       87mls      53KB    12MB/s
-  libxml2.so       44mcs       98mls      33KB    11MB/s
---------------------------------------------------------
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl      405mcs      509mls     159KB     2MB/s
+     erlsom       97mcs      178mls     106KB     6MB/s
+    exomler       57mcs      113mls      41KB     9MB/s
+libexpat.so       53mcs      129mls      53KB     8MB/s
+ libxml2.so       44mcs       90mls      33KB    12MB/s
+-------------------------------------------------------
 ./exomler_bench test_03.xml 1000
---------------------------------------------------------
-      parser    min time    all time    memory     speed
---------------------------------------------------------
-       xmerl     1753mcs     1951mls     672KB     2MB/s
-      erlsom      624mcs      920mls     171KB     5MB/s
-     exomler      503mcs      812mls     139KB     5MB/s
- libexpat.so      266mcs      347mls     310KB    13MB/s
-  libxml2.so      213mcs      294mls     224KB    15MB/s
---------------------------------------------------------
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl     1749mcs     2098mls     672KB     2MB/s
+     erlsom      622mcs      927mls     171KB     5MB/s
+    exomler      389mcs      512mls      53KB     9MB/s
+libexpat.so      265mcs      350mls     310KB    13MB/s
+ libxml2.so      211mcs      299mls     224KB    15MB/s
+-------------------------------------------------------
 ./exomler_bench test_04.xml 1000
---------------------------------------------------------
-      parser    min time    all time    memory     speed
---------------------------------------------------------
-       xmerl     3599mcs     4153mls    2845KB     5MB/s
-      erlsom     1681mcs     2064mls    1087KB    10MB/s
-     exomler      415mcs      703mls      86KB    30MB/s
- libexpat.so      285mcs      467mls     310KB    45MB/s
-  libxml2.so      248mcs      316mls     191KB    67MB/s
---------------------------------------------------------
+-------------------------------------------------------
+     parser    min time    all time    memory     speed
+-------------------------------------------------------
+      xmerl     3583mcs     4144mls    2845KB     5MB/s
+     erlsom     1679mcs     2043mls    1087KB    10MB/s
+    exomler      328mcs      622mls     139KB    34MB/s
+libexpat.so      290mcs      429mls     310KB    49MB/s
+ libxml2.so      248mcs      316mls     191KB    67MB/s
+-------------------------------------------------------
 ```
 
 Here we can see, that exomler very memory-efficient, and shows good speed, even when compared with the C-libs.
@@ -84,34 +84,32 @@ If we exclude parsers that use Erlang-ports, we note that the results of parsers
 -------------------------------------------------------
      parser    min time    all time    memory     speed
 -------------------------------------------------------
-      xmerl      165mcs      196mls      73KB     1MB/s
-     erlsom       34mcs       70mls      20KB     4MB/s
-    exomler       29mcs       61mls      13KB     4MB/s
+      xmerl      166mcs      193mls      73KB     1MB/s
+     erlsom       34mcs       69mls      20KB     4MB/s
+    exomler       23mcs       50mls      16KB     6MB/s
 -------------------------------------------------------
 ./exomler_bench test_02.xml 1000
 -------------------------------------------------------
      parser    min time    all time    memory     speed
 -------------------------------------------------------
-      xmerl      400mcs      460mls     159KB     2MB/s
-     erlsom       98mcs      149mls     106KB     7MB/s
-    exomler       75mcs      115mls      20KB     9MB/s
+      xmerl      398mcs      451mls     159KB     2MB/s
+     erlsom       98mcs      150mls     106KB     7MB/s
+    exomler       56mcs       89mls      41KB    12MB/s
 -------------------------------------------------------
 ./exomler_bench test_03.xml 1000
 -------------------------------------------------------
      parser    min time    all time    memory     speed
 -------------------------------------------------------
-      xmerl     1746mcs     1880mls     672KB     2MB/s
-     erlsom      619mcs      717mls     171KB     6MB/s
-    exomler      505mcs      579mls     139KB     8MB/s
+      xmerl     1742mcs     1869mls     672KB     2MB/s
+     erlsom      618mcs      720mls     171KB     6MB/s
+    exomler      385mcs      448mls      53KB    10MB/s
 -------------------------------------------------------
 ./exomler_bench test_04.xml 1000
 -------------------------------------------------------
      parser    min time    all time    memory     speed
 -------------------------------------------------------
-      xmerl     3621mcs     3976mls    2845KB     5MB/s
-     erlsom     1691mcs     1925mls    1087KB    11MB/s
-    exomler      406mcs      478mls      86KB    44MB/s
+      xmerl     3612mcs     3935mls    2845KB     5MB/s
+     erlsom     1676mcs     1924mls    1087KB    11MB/s
+    exomler      319mcs      370mls     139KB    57MB/s
 -------------------------------------------------------
 ```
-
-
