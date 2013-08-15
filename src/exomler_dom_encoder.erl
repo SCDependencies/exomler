@@ -1,15 +1,33 @@
 -module(exomler_dom_encoder).
 
 %% API
+-export([encode_document/1]).
 -export([encode/1]).
 
 -include("exomler.hrl").
 
 %% API
-encode({Tag, Attrs, Content}) ->
-    tag({Tag, Attrs, Content}).
+encode_document({xml, Version, Encoding, RootEntity}) when 
+        is_atom(Version), is_atom(Encoding), is_tuple(RootEntity) ->
+    Prolog = prolog(version(Version), encoding(Encoding)),
+    Root = tag(RootEntity),
+    <<Prolog/binary, Root/binary>>.
+
+encode(Entity) when is_tuple(Entity)->
+    tag(Entity).
 
 %% internal
+prolog(Version, Encoding) ->
+    Attrs = [{<<"version">>, Version}, {<<"encoding">>, Encoding}],
+    BinAttrs = tag_attrs(Attrs),
+    <<"<?xml", BinAttrs/binary, " ?>\n">>.
+
+version('1.0') -> <<"1.0">>;
+version('1.1') -> <<"1.1">>.
+
+encoding(latin1) -> <<"ISO-8859-1">>;
+encoding(utf8) -> <<"UTF-8">>.
+
 tag({Tag, Attrs, Content}) ->
     BinAttrs = tag_attrs(Attrs),
     BinContent = << <<(content(SubTag))/binary>> || SubTag <- Content>>,
@@ -58,6 +76,12 @@ escape(<<>>, Escaped) ->
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+
+encode_document_test_() ->
+    [
+    ?_assertEqual(<<"<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\n<html></html>">>, 
+        encode_document({xml, '1.0', utf8, {<<"html">>, [], []}}))
+    ].
 
 encode_tag_test_() ->
     [

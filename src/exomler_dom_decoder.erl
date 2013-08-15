@@ -1,19 +1,63 @@
 -module(exomler_dom_decoder).
 
 %% API
+-export([decode_document/1]).
 -export([decode/1]).
 
 -include("exomler.hrl").
 
 %% API
+decode_document(Bin) when is_binary(Bin) ->
+    {Version, Encoding, Rest1} = prolog(ltrim(Bin)),
+    Rest2 = skip_doctype(ltrim(Rest1)),
+    {Tag, _Rest} = tag(ltrim(Rest2)),
+    {xml, Version, Encoding, Tag}.
+
 decode(Bin) when is_binary(Bin) ->
-    Bin1 = skip_prolog(ltrim(Bin)),
-    Bin2 = skip_doctype(ltrim(Bin1)),
-    {Tag, Rest} = tag(ltrim(Bin2)),
-    <<>> = ltrim(Rest), 
+    Rest1 = skip_prolog(ltrim(Bin)),
+    Rest2 = skip_doctype(ltrim(Rest1)),
+    {Tag, _Rest} = tag(ltrim(Rest2)),
     Tag.
 
 %% internal
+prolog(<<"<?xml", Bin/binary>>) ->
+    {Prolog, Rest} = split(Bin, <<"?>">>),
+    Attrs = tag_attrs(Prolog),
+    {get_version(Attrs), get_encoding(Attrs), Rest}.
+
+get_version(Attrs) ->
+    case get_value(<<"version">>, Attrs) of
+        <<"1.0">> -> '1.0';
+        <<"1.1">> -> '1.1'
+    end.
+
+get_encoding(Attrs) ->
+    case to_lower(get_value(<<"encoding">>, Attrs)) of
+        <<"iso-8859-1">>    -> latin1;
+        <<"iso_8859_1">>    -> latin1;
+        <<"iso_8859-1">>    -> latin1;
+        <<"iso8859-1">>     -> latin1;
+        <<"utf-8">>         -> utf8;
+        <<"utf_8">>         -> utf8;
+        <<"utf8">>          -> utf8;
+        <<>>                -> undefined;
+        _                   -> unknown
+    end.
+
+to_lower(Bin) ->
+    << <<(lower(C))>> || <<C:8>> <= Bin>>.
+
+lower(C) when C >= $A, C =< $Z ->
+    C+32;
+lower(C) ->
+    C.
+ 
+get_value(Key, List) ->
+    case lists:keyfind(Key, 1, List) of
+        {Key, Value} -> Value;
+        false -> <<>>
+    end.
+
 skip_prolog(<<"<?xml", Bin/binary>>) ->
     {_, Rest} = split(Bin, <<"?>">>),
     Rest;
@@ -116,10 +160,10 @@ unescape(Bin) ->
 
 split(Bin, Pattern) ->
     case binary:match(Bin, Pattern) of
-		{A,B} ->
+        {A,B} ->
             <<Before:A/binary, _:B/binary, After/binary>> = Bin,
-	        {Before, After};
-	    nomatch ->
+            {Before, After};
+        nomatch ->
             {Bin, <<>>}
     end.
 
@@ -127,6 +171,12 @@ split(Bin, Pattern) ->
 -ifdef(TEST).
 
 -include_lib("eunit/include/eunit.hrl").
+
+decode_document_test_() ->
+    [
+    ?_assertEqual({xml, '1.0', utf8, {<<"html">>, [], []}},
+        decode_document(<<"<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<html></html>\n">>))
+    ].
 
 decode_tag_test_() ->
     [
