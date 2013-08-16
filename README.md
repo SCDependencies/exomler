@@ -30,7 +30,7 @@ Benchmarking
 ```
 ./exomler_bench test_01.xml 1000
 -------------------------------------------------------
-     parser    min time    all time    memory     speed
+     parser    min time  total time    memory     speed
 -------------------------------------------------------
       xmerl      166mcs      193mls      73KB     1MB/s
      erlsom       34mcs       69mls      20KB     4MB/s
@@ -38,7 +38,7 @@ Benchmarking
 -------------------------------------------------------
 ./exomler_bench test_02.xml 1000
 -------------------------------------------------------
-     parser    min time    all time    memory     speed
+     parser    min time  total time    memory     speed
 -------------------------------------------------------
       xmerl      398mcs      451mls     159KB     2MB/s
      erlsom       98mcs      150mls     106KB     7MB/s
@@ -46,7 +46,7 @@ Benchmarking
 -------------------------------------------------------
 ./exomler_bench test_03.xml 1000
 -------------------------------------------------------
-     parser    min time    all time    memory     speed
+     parser    min time  total time    memory     speed
 -------------------------------------------------------
       xmerl     1742mcs     1869mls     672KB     2MB/s
      erlsom      618mcs      720mls     171KB     6MB/s
@@ -54,10 +54,12 @@ Benchmarking
 -------------------------------------------------------
 ./exomler_bench test_04.xml 1000
 -------------------------------------------------------
-     parser    min time    all time    memory     speed
+     parser    min time  total time    memory     speed
 -------------------------------------------------------
       xmerl     3612mcs     3935mls    2845KB     5MB/s
      erlsom     1676mcs     1924mls    1087KB    11MB/s
     exomler      319mcs      370mls     139KB    57MB/s
 -------------------------------------------------------
 ```
+
+Here we can see that several files of different sizes and content parsed 1000 times by different parsers.
