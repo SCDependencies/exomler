@@ -67,3 +67,7 @@ Benchmarking
 ```
 
 Here we can see that several files of different sizes and content parsed 1000 times by different parsers.
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/kostyushkin/exomler/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
