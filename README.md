@@ -1,32 +1,37 @@
-Exomler
-========
+#Exomler
 
 It is a very simple DOM XML parser that can work only with valid and well-formed XML.
 
 It is fast enough, convenient and has very low memory footprint due to binary usage. Really!
 
-Usage:
+##Usage
 
+### Decode
+
+```erlang
+{xml, Version, Encoding, RootElement} = exomler:decode_document(XMLDocument).
+RootElement = exomler:decode(XML).
+{Tag, Attrs, Content} = RootElement.
 ```
-{Tag, Attrs, Content} = exomler:decode(XML). 
+
+### Encode
+```erlang
+RootElement = {Tag, Attrs, Content},
+XMLDocument = exomler:encode_document({xml, Version, Encoding, RootElement}).
+XML = exomler:encode(RootElement).
 ```
 
 Where Tag is binary name of root tag, Attrs is a {Key,Value} list of attrs and Content is
 list of inner tags or Text which is binary.
 
-For example:
-
-```
+### Example
+```erlang
 XML = <<"<html key=\"value\">Body</html>">>.
 {<<"html">>, [{<<"key">>, <<"value">>}], [<<"Body">>]} = exomler:decode(XML).
 XML = exomler:encode({<<"html">>, [{<<"key">>, <<"value">>}], [<<"Body">>]}).
-
 ```
 
-
-Benchmarking
-------------
-
+##Benchmarking
 ```
 ./exomler_bench test_01.xml 1000
 -------------------------------------------------------
