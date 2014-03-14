@@ -4,8 +4,6 @@
 -export([encode_document/1]).
 -export([encode/1]).
 
--include("exomler.hrl").
-
 %% API
 encode_document({xml, Version, Encoding, RootEntity}) when 
         is_atom(Version), is_atom(Encoding), is_tuple(RootEntity) ->
@@ -31,7 +29,7 @@ encoding(utf8) -> <<"UTF-8">>.
 tag({Tag, Attrs, Content}) ->
     BinAttrs = tag_attrs(Attrs),
     BinContent = << <<(content(SubTag))/binary>> || SubTag <- Content>>,
-    Tag1 = ltrim(Tag),
+    Tag1 = bstring:ltrim(Tag),
     <<"<", Tag1/binary, BinAttrs/binary, ">", BinContent/binary, 
         "</", Tag1/binary, ">">>.
 
@@ -48,11 +46,6 @@ content(Tuple) when is_tuple(Tuple) ->
     tag(Tuple);
 content(Binary) when is_binary(Binary) ->
     escape(Binary).
-
-ltrim(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
-    ltrim(Bin);
-ltrim(Bin) -> 
-    Bin.
 
 escape(Bin) -> escape(Bin, <<>>).
 

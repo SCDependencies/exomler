@@ -8,20 +8,20 @@
 
 %% API
 decode_document(Bin) when is_binary(Bin) ->
-    {Version, Encoding, Rest1} = prolog(ltrim(Bin)),
-    Rest2 = skip_doctype(ltrim(Rest1)),
-    {Tag, _Rest} = tag(ltrim(Rest2)),
+    {Version, Encoding, Rest1} = prolog(bstring:ltrim(Bin)),
+    Rest2 = skip_doctype(bstring:ltrim(Rest1)),
+    {Tag, _Rest} = tag(bstring:ltrim(Rest2)),
     {xml, Version, Encoding, Tag}.
 
 decode(Bin) when is_binary(Bin) ->
-    Rest1 = skip_prolog(ltrim(Bin)),
-    Rest2 = skip_doctype(ltrim(Rest1)),
-    {Tag, _Rest} = tag(ltrim(Rest2)),
+    Rest1 = skip_prolog(bstring:ltrim(Bin)),
+    Rest2 = skip_doctype(bstring:ltrim(Rest1)),
+    {Tag, _Rest} = tag(bstring:ltrim(Rest2)),
     Tag.
 
 %% internal
 prolog(<<"<?xml", Bin/binary>>) ->
-    {Prolog, Rest} = split(Bin, <<"?>">>),
+    {Prolog, Rest} = bstring:split(Bin, <<"?>">>),
     Attrs = tag_attrs(Prolog),
     {get_version(Attrs), get_encoding(Attrs), Rest}.
 
@@ -32,7 +32,8 @@ get_version(Attrs) ->
     end.
 
 get_encoding(Attrs) ->
-    case to_lower(get_value(<<"encoding">>, Attrs)) of
+    Encoding = get_value(<<"encoding">>, Attrs), 
+    case bstring:to_lower(Encoding) of
         <<"iso-8859-1">>    -> latin1;
         <<"iso_8859_1">>    -> latin1;
         <<"iso_8859-1">>    -> latin1;
@@ -44,14 +45,6 @@ get_encoding(Attrs) ->
         _                   -> unknown
     end.
 
-to_lower(Bin) ->
-    << <<(lower(C))>> || <<C:8>> <= Bin>>.
-
-lower(C) when C >= $A, C =< $Z ->
-    C+32;
-lower(C) ->
-    C.
- 
 get_value(Key, List) ->
     case lists:keyfind(Key, 1, List) of
         {Key, Value} -> Value;
@@ -59,19 +52,19 @@ get_value(Key, List) ->
     end.
 
 skip_prolog(<<"<?xml", Bin/binary>>) ->
-    {_, Rest} = split(Bin, <<"?>">>),
+    {_, Rest} = bstring:split(Bin, <<"?>">>),
     Rest;
 skip_prolog(Bin) ->
     Bin.
 
 skip_doctype(<<"<!", Bin/binary>>) ->
-    {_, Rest} = split(Bin, <<">">>),
+    {_, Rest} = bstring:split(Bin, <<">">>),
     Rest;
 skip_doctype(Bin) ->
     Bin.
 
 tag(<<"<", Bin/binary>>) ->
-    {TagHeader1, Rest1} = split(Bin, <<">">>),
+    {TagHeader1, Rest1} = bstring:split(Bin, <<">">>),
     Len = size(TagHeader1)-1, 
     case TagHeader1 of
         <<TagHeader:Len/binary, "/">> ->
@@ -84,7 +77,7 @@ tag(<<"<", Bin/binary>>) ->
   end.
 
 tag_header(Bin) ->
-    {Tag, Rest} = split(Bin, <<" ">>),
+    {Tag, Rest} = bstring:split(Bin, <<" ">>),
     {Tag, tag_attrs(Rest)}.
 
 tag_attrs(<<>>) ->
@@ -92,26 +85,26 @@ tag_attrs(<<>>) ->
 tag_attrs(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
     tag_attrs(Bin);
 tag_attrs(Bin) ->
-    {Key, Value1} = split(Bin, <<"=">>),
+    {Key, Value1} = bstring:split(Bin, <<"=">>),
     {Value2, Rest} = attr_value(Value1),
-    [{rtrim(Key), unescape(Value2)}|tag_attrs(Rest)].
+    [{bstring:rtrim(Key), unescape(Value2)}|tag_attrs(Rest)].
 
 attr_value(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
     attr_value(Bin);
 attr_value(<<Quote, Value/binary>>) when ?IS_QUOTE(Quote) ->
-    split(Value, <<Quote>>).
+    bstring:split(Value, <<Quote>>).
 
 tag_content(<<"<![CDATA[", Bin/binary>>, Tag) ->
-    {Text, Rest1} = split(Bin, <<"]]>">>),
+    {Text, Rest1} = bstring:split(Bin, <<"]]>">>),
     {Content, Rest2} = tag_content(Rest1, Tag),
     {[Text|Content], Rest2};
 tag_content(<<"<!--", Bin/binary>>, Tag) ->
-    {_Comment, Rest1} = split(Bin, <<"-->">>),
+    {_Comment, Rest1} = bstring:split(Bin, <<"-->">>),
     tag_content(Rest1, Tag);
 tag_content(<<"</", Bin/binary>>, Tag) ->
     Len = size(Tag),
     <<Tag:Len/binary, Rest1/binary>> = Bin,
-    <<">", Rest2/binary>> = ltrim(Rest1),
+    <<">", Rest2/binary>> = bstring:ltrim(Rest1),
     {[], Rest2};
 tag_content(<<"<", _/binary>> = Bin, Tag) ->
     {TagData, Rest1} = tag(Bin),
@@ -123,27 +116,10 @@ tag_content(Bin, Tag) ->
     {A, _} = binary:match(Bin, <<"<">>),
     <<Text:A/binary, Rest1/binary>> = Bin,
     {Content, Rest2} = tag_content(Rest1, Tag),
-    {[rtrim(unescape(Text))|Content], Rest2}.
-
-ltrim(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
-    ltrim(Bin);
-ltrim(Bin) -> 
-    Bin.
-
-rtrim(<<>>) ->
-    <<>>;
-rtrim(Bin) ->
-    case binary:last(Bin) of
-        Blank when ?IS_BLANK(Blank) ->
-            Size = size(Bin) - 1,
-            <<Part:Size/binary, _/binary>> = Bin,
-            rtrim(Part);
-        _ ->
-            Bin
-    end.
+    {[bstring:rtrim(unescape(Text))|Content], Rest2}.
 
 unescape(Bin) ->
-    case split(Bin, <<"&">>) of
+    case bstring:split(Bin, <<"&">>) of
         {Unescaped, <<>>} ->
             Unescaped;
         {Unescaped, <<"quot;", Rest/binary>>} ->
@@ -156,15 +132,6 @@ unescape(Bin) ->
             <<Unescaped/binary, $>, (unescape(Rest))/binary>>;
         {Unescaped, <<"amp;",  Rest/binary>>} ->
             <<Unescaped/binary, $&, (unescape(Rest))/binary>>
-    end.
-
-split(Bin, Pattern) ->
-    case binary:match(Bin, Pattern) of
-        {A,B} ->
-            <<Before:A/binary, _:B/binary, After/binary>> = Bin,
-            {Before, After};
-        nomatch ->
-            {Bin, <<>>}
     end.
 
 %% Tests

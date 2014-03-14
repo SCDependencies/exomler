@@ -1,7 +1,12 @@
 REBAR=`which rebar`
 
-all:
-	@$(REBAR) compile skip_deps=true
+all: get-deps compile
+
+get-deps:
+	@$(REBAR) get-deps
+
+compile:
+	@$(REBAR) compile
 
 clean:
 	@$(REBAR) clean
@@ -10,10 +15,6 @@ clean:
 
 test:
 	@$(REBAR) eunit skip_deps=true
-
-bench:
-	@$(REBAR) compile skip_deps=true
-	erl -pa ebin -s exomler bench
 
 PLT_NAME=.exomler.plt
 
