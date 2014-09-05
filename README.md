@@ -1,4 +1,4 @@
-#Exomler
+#Exomler [![Build Status](https://travis-ci.org/erlangbureau/exomler.svg?branch=master)](https://travis-ci.org/erlangbureau/exomler)
 
 It is a very simple DOM XML parser that can work only with valid and well-formed XML.
 
@@ -72,7 +72,4 @@ XML = exomler:encode({<<"html">>, [{<<"key">>, <<"value">>}], [<<"Body">>]}).
 ```
 
 Here we can see that several files of different sizes and content parsed 1000 times by different parsers.
-
-
-[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/kostyushkin/exomler/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
