@@ -8,15 +8,15 @@
 
 %% API
 decode_document(Bin) when is_binary(Bin) ->
-    {Version, Encoding, Rest1} = prolog(bstring:ltrim(Bin)),
-    Rest2 = skip_doctype(bstring:ltrim(Rest1)),
-    {Tag, _Rest} = tag(bstring:ltrim(Rest2)),
+    {Version, Encoding, Rest1} = prolog(bstring:trim_left(Bin)),
+    Rest2 = skip_doctype(bstring:trim_left(Rest1)),
+    {Tag, _Rest} = tag(bstring:trim_left(Rest2)),
     {xml, Version, Encoding, Tag}.
 
 decode(Bin) when is_binary(Bin) ->
-    Rest1 = skip_prolog(bstring:ltrim(Bin)),
-    Rest2 = skip_doctype(bstring:ltrim(Rest1)),
-    {Tag, _Rest} = tag(bstring:ltrim(Rest2)),
+    Rest1 = skip_prolog(bstring:trim_left(Bin)),
+    Rest2 = skip_doctype(bstring:trim_left(Rest1)),
+    {Tag, _Rest} = tag(bstring:trim_left(Rest2)),
     Tag.
 
 %% internal
@@ -87,7 +87,7 @@ tag_attrs(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
 tag_attrs(Bin) ->
     {Key, Value1} = bstring:split(Bin, <<"=">>),
     {Value2, Rest} = attr_value(Value1),
-    [{bstring:rtrim(Key), unescape(Value2)}|tag_attrs(Rest)].
+    [{bstring:trim_right(Key), unescape(Value2)}|tag_attrs(Rest)].
 
 attr_value(<<Blank, Bin/binary>>) when ?IS_BLANK(Blank) ->
     attr_value(Bin);
@@ -104,7 +104,7 @@ tag_content(<<"<!--", Bin/binary>>, Tag) ->
 tag_content(<<"</", Bin/binary>>, Tag) ->
     Len = size(Tag),
     <<Tag:Len/binary, Rest1/binary>> = Bin,
-    <<">", Rest2/binary>> = bstring:ltrim(Rest1),
+    <<">", Rest2/binary>> = bstring:trim_left(Rest1),
     {[], Rest2};
 tag_content(<<"<", _/binary>> = Bin, Tag) ->
     {TagData, Rest1} = tag(Bin),
@@ -116,7 +116,7 @@ tag_content(Bin, Tag) ->
     {A, _} = binary:match(Bin, <<"<">>),
     <<Text:A/binary, Rest1/binary>> = Bin,
     {Content, Rest2} = tag_content(Rest1, Tag),
-    {[bstring:rtrim(unescape(Text))|Content], Rest2}.
+    {[bstring:trim_right(unescape(Text))|Content], Rest2}.
 
 unescape(Bin) ->
     case bstring:split(Bin, <<"&">>) of

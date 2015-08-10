@@ -29,7 +29,7 @@ encoding(utf8) -> <<"UTF-8">>.
 tag({Tag, Attrs, Content}) ->
     BinAttrs = tag_attrs(Attrs),
     BinContent = << <<(content(SubTag))/binary>> || SubTag <- Content>>,
-    Tag1 = bstring:ltrim(Tag),
+    Tag1 = bstring:trim_left(Tag),
     <<"<", Tag1/binary, BinAttrs/binary, ">", BinContent/binary, 
         "</", Tag1/binary, ">">>.
 
