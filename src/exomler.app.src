@@ -1,0 +1,12 @@
+{application, exomler, [
+    {description, ""},
+    {vsn, git},
+    {registered, []},
+    {applications, [
+        kernel,
+        stdlib,
+        parselib
+    ]},
+    {modules, []},
+    {env, []}
+ ]}.
